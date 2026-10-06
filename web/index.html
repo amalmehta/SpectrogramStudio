@@ -1,0 +1,829 @@
+<title>Spectrogram Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single-screen console — toolbar on top, time-aligned timeline (spectrogram / MFCC / pitch) left,
+   live inspector right; stacks to one column on phones. Deliberately dark-only: it is a listening room,
+   and the magma spectrogram reads best on a dark surround. */
+:root {
+  --ground: #121019;      /* page */
+  --panel: #1b1824;       /* toolbar, inspector cards */
+  --raise: #262233;       /* controls */
+  --line: #34304a;        /* hairlines */
+  --ink: #ece8f4;         /* text */
+  --muted: #9a93ad;       /* secondary text */
+  --faint: #6b6580;
+  --cut: #4fb0ff;         /* painted cuts (blue) */
+  --boost: #ffb547;       /* painted boosts (amber) */
+  --accent: #e85d75;      /* pitch line, focus, selection */
+  --warn: #ffb547;
+  --ui: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--ground); color: var(--ink); font: 14px/1.4 var(--ui); }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { display: grid; grid-template-rows: auto 1fr auto; height: 100%; padding-inline: 16px; padding-block: 10px; gap: 10px; }
+
+/* Toolbar */
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.brand { display: flex; flex-direction: column; min-width: 0; margin-right: auto; }
+.brand h1 { font-size: 17px; font-weight: 700; letter-spacing: 0.01em; margin: 0; }
+.brand .file { font: 12px var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 46ch; }
+.group { display: flex; align-items: center; gap: 6px; }
+.btn { background: var(--raise); border: 1px solid var(--line); border-radius: 7px; padding: 6px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.seg { display: inline-flex; background: var(--raise); border: 1px solid var(--line); border-radius: 7px; padding: 2px; }
+.seg button { background: none; border: 0; padding: 4px 10px; border-radius: 5px; cursor: pointer; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--ground); color: var(--ink); }
+.seg.brush button[data-v="cut"][aria-pressed="true"] { color: var(--cut); }
+.seg.brush button[data-v="boost"][aria-pressed="true"] { color: var(--boost); }
+.slider { display: flex; flex-direction: column; font-size: 11px; color: var(--muted); gap: 1px; }
+.slider input { width: 92px; accent-color: var(--accent); }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); }
+
+/* Main */
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px; min-height: 0; }
+.timeline { display: grid; grid-template-rows: minmax(240px, 1fr) 84px 110px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #000; min-height: 0; }
+.track { position: relative; min-height: 0; border-top: 1px solid var(--line); background: var(--panel); }
+.track:first-child { border-top: 0; background: #000; }
+.track canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#spec, #overlay { touch-action: pan-y; cursor: crosshair; }
+.track .name { position: absolute; left: 6px; top: 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); pointer-events: none; z-index: 2; }
+.drop { position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--ground) 80%, transparent); border: 2px dashed var(--accent); border-radius: 10px; font-size: 18px; z-index: 5; }
+.busy { position: absolute; right: 10px; bottom: 8px; font: 12px var(--mono); color: var(--muted); z-index: 3; background: color-mix(in srgb, #000 70%, transparent); padding: 2px 8px; border-radius: 5px; }
+
+.inspector { display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow-y: auto; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.card h2 { margin: 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); display: flex; justify-content: space-between; }
+.card h2 span { font: 12px var(--mono); text-transform: none; letter-spacing: 0; color: var(--faint); }
+.note { display: flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
+.note b { font-size: 32px; font-weight: 700; letter-spacing: -0.01em; }
+.note .cents { color: var(--muted); font-family: var(--mono); }
+.note .hz { margin-left: auto; text-align: right; font: 13px var(--mono); }
+.note .hz small { display: block; color: var(--faint); font-size: 11px; }
+.card canvas { width: 100%; display: block; }
+dl.readout { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0; font: 12px var(--mono); }
+dl.readout dt { color: var(--muted); font-family: var(--ui); }
+dl.readout dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 12px; color: var(--muted); }
+.status .hint { color: var(--faint); }
+.status .clip { color: var(--warn); }
+.status .spacer { margin-left: auto; }
+.linkbtn { background: none; border: 0; color: var(--muted); cursor: pointer; padding: 2px 4px; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Panels (settings, feedback) */
+dialog { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; width: min(520px, calc(100% - 32px)); }
+dialog::backdrop { background: rgba(5, 4, 10, 0.6); }
+dialog h2 { margin: 0 0 12px; font-size: 17px; }
+dialog h3 { margin: 14px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.form { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; align-items: center; }
+.form label { color: var(--muted); }
+.form select, .form input[type=number] { background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+.form input[type=range] { accent-color: var(--accent); }
+.actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+textarea { width: 100%; min-height: 120px; background: var(--raise); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font: 14px var(--ui); resize: vertical; }
+.small { font-size: 12px; color: var(--muted); }
+.feedback-tab { position: fixed; right: 0; bottom: 30%; transform-origin: bottom right; transform: rotate(-90deg) translateY(-100%); background: var(--raise); border: 1px solid var(--line); border-bottom: 0; border-radius: 7px 7px 0 0; padding: 4px 10px; font-size: 12px; color: var(--muted); cursor: pointer; z-index: 10; }
+
+@media (max-width: 900px) {
+  .main { grid-template-columns: minmax(0, 1fr); }
+  .timeline { grid-template-rows: 320px 72px 96px; }
+  .inspector { overflow: visible; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .app { height: auto; min-height: 100%; }
+  .slider input { width: 76px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app" id="app">
+  <header class="bar">
+    <div class="brand">
+      <h1>Spectrogram Studio</h1>
+      <span class="file" id="fileName">Demo Melody (synthesised example)</span>
+    </div>
+    <div class="group">
+      <input type="file" id="fileInput" accept="audio/*,video/*" hidden>
+      <button class="btn" id="openBtn" title="Open an audio or video file (or drop one anywhere)">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M4 20h16M12 4v12M7 11l5 5 5-5"/></svg>Open file</button>
+      <button class="btn primary" id="playBtn" title="Play or pause (Space)">
+        <svg class="icon" viewBox="0 0 24 24" id="playIcon"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg><span id="playLabel">Play</span></button>
+    </div>
+    <div class="group" role="group" aria-label="Brush">
+      <div class="seg brush" id="brushMode">
+        <button data-v="cut" aria-pressed="true" title="Paint cuts (blue)">Cut</button>
+        <button data-v="boost" aria-pressed="false" title="Paint boosts (amber)">Boost</button>
+      </div>
+      <label class="slider" for="amount">Amount <span id="amountVal">24 dB</span><input id="amount" type="range" min="3" max="60" step="1" value="24"></label>
+      <label class="slider" for="size">Size <span id="sizeVal">24 px</span><input id="size" type="range" min="6" max="120" step="1" value="24"></label>
+      <label class="slider" for="hard">Hardness <span id="hardVal">40%</span><input id="hard" type="range" min="0" max="95" step="1" value="40"></label>
+    </div>
+    <div class="group">
+      <button class="btn" id="undoBtn" title="Undo stroke (⌘Z)"><svg class="icon" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
+      <button class="btn" id="redoBtn" title="Redo stroke (⇧⌘Z)"><svg class="icon" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg></button>
+      <button class="btn" id="clearBtn" title="Clear all filters (undoable)">Clear</button>
+    </div>
+    <div class="group">
+      <span class="label">Hear</span>
+      <div class="seg" id="hearSeg">
+        <button data-v="filtered" aria-pressed="true">Filtered</button>
+        <button data-v="original" aria-pressed="false">Original</button>
+      </div>
+      <button class="btn" id="exportBtn" title="Save the filtered audio as a WAV (in a .zip)" hidden>
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 4v12M7 9l5-5 5 5M4 20h16"/></svg>Export</button>
+      <button class="btn" id="settingsBtn" title="Settings (⌘,)" aria-label="Settings">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="timeline" id="timeline" aria-label="Timeline">
+      <div class="track" id="specTrack">
+        <canvas id="spec"></canvas><canvas id="overlay" aria-label="Spectrogram: drag to paint filters"></canvas>
+        <div class="busy" id="busy" hidden></div>
+      </div>
+      <div class="track"><span class="name">MFCC</span><canvas id="mfcc"></canvas><canvas id="mfccHead"></canvas></div>
+      <div class="track"><span class="name">Pitch</span><canvas id="pitch"></canvas><canvas id="pitchHead"></canvas></div>
+    </section>
+
+    <aside class="inspector" aria-label="Inspector">
+      <div class="card">
+        <h2 id="atLabel">At playhead <span id="atTime">0:00.00</span></h2>
+        <div class="note" id="noteBox"><b id="noteName">–</b><span class="cents" id="noteCents"></span><span class="hz" id="noteHz">No pitch<small>unvoiced or silent</small></span></div>
+      </div>
+      <div class="card"><h2>Spectrum <span>dB · log Hz</span></h2><canvas id="slice" height="150"></canvas></div>
+      <div class="card"><h2>MFCC <span id="mfccRange">c1–c12</span></h2><canvas id="bars" height="110"></canvas></div>
+      <div class="card" id="pointerCard" hidden><h2>Pointer</h2>
+        <dl class="readout"><dt>Frequency</dt><dd id="pFreq"></dd><dt>Level</dt><dd id="pLevel"></dd><dt>Filter</dt><dd id="pGain"></dd></dl>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="status">
+    <span class="label">Show</span>
+    <div class="seg" id="showSeg"><button data-v="filtered" aria-pressed="true">Filtered</button><button data-v="original" aria-pressed="false">Original</button></div>
+    <button class="btn" id="fitBtn" disabled>Zoom to fit</button>
+    <span id="info"></span>
+    <span class="clip" id="clip" hidden></span>
+    <span class="hint">Drag to paint · click the time ruler to seek · ⌘/Ctrl-scroll or pinch to zoom · B swaps what you hear</span>
+    <span class="spacer"></span>
+    <a class="small" href="https://github.com/amalmehta/SpectrogramStudio" target="_blank" rel="noopener">Mac app on GitHub</a>
+  </footer>
+</div>
+
+<button class="feedback-tab" id="feedbackTab">Feedback</button>
+
+<dialog id="settingsDlg" aria-labelledby="settingsTitle">
+  <h2 id="settingsTitle">Settings</h2>
+  <h3>Analysis</h3>
+  <div class="form">
+    <label for="sFft">FFT size</label><select id="sFft"><option>512</option><option>1024</option><option selected>2048</option><option>4096</option><option>8192</option></select>
+    <label for="sWin">Window</label><select id="sWin"><option value="hann">Hann</option><option value="hamming">Hamming</option><option value="blackman">Blackman</option></select>
+    <label for="sMfcc">MFCC coefficients</label><input id="sMfcc" type="number" min="8" max="40" value="13">
+    <label for="sPmin">Lowest pitch (Hz)</label><input id="sPmin" type="number" min="30" max="400" step="10" value="60">
+    <label for="sPmax">Highest pitch (Hz)</label><input id="sPmax" type="number" min="200" max="4000" step="50" value="1000">
+    <label for="sThr">Voicing threshold</label><input id="sThr" type="range" min="0.05" max="0.5" step="0.01" value="0.15">
+  </div>
+  <h3>Display</h3>
+  <div class="form">
+    <label for="sScale">Frequency axis</label><select id="sScale"><option value="log">Log</option><option value="mel">Mel</option><option value="linear">Linear</option></select>
+    <label for="sCmap">Colours</label><select id="sCmap"><option value="magma">Magma</option><option value="inferno">Inferno</option><option value="viridis">Viridis</option><option value="gray">Grayscale</option></select>
+    <label for="sFloor">Quietest shown</label><input id="sFloor" type="range" min="-120" max="-40" step="5" value="-90">
+    <label for="sMask">Show painted filters</label><input id="sMask" type="checkbox" checked>
+  </div>
+  <h3>Playback</h3>
+  <div class="form">
+    <label for="sLoop">Loop</label><input id="sLoop" type="checkbox">
+  </div>
+  <p class="small">Hop is a quarter of the FFT size. Painted filters are stored in seconds and hertz, so they carry over when you change these.</p>
+  <div class="actions"><button class="btn primary" id="settingsDone">Done</button></div>
+</dialog>
+
+<dialog id="feedbackDlg" aria-labelledby="fbTitle">
+  <h2 id="fbTitle">Send feedback</h2>
+  <div class="seg" id="fbKind" style="margin-bottom:10px"><button data-v="Idea" aria-pressed="true">Idea</button><button data-v="Bug" aria-pressed="false">Bug</button><button data-v="Question" aria-pressed="false">Question</button></div>
+  <label for="fbText" class="small">What should change?</label>
+  <textarea id="fbText"></textarea>
+  <p class="small">Nothing is sent from this page. Open it as a GitHub issue, or copy it and send it however you like.</p>
+  <div class="actions">
+    <button class="btn" id="fbClose">Close</button>
+    <button class="btn" id="fbCopy">Copy text</button>
+    <a class="btn primary" id="fbIssue" href="https://github.com/amalmehta/SpectrogramStudio/issues/new" target="_blank" rel="noopener">Open GitHub issue</a>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+// ───────────────────────── Preferences (per viewer, best effort) ─────────────────────────
+const DEFAULTS = { fft: 2048, win: "hann", mfcc: 13, mels: 40, pmin: 60, pmax: 1000, thr: 0.15,
+  scale: "log", cmap: "magma", floor: -90, mask: true, loop: false, gain: -24, size: 24, hard: 0.4 };
+let P = { ...DEFAULTS };
+try { Object.assign(P, JSON.parse(localStorage.getItem("prefs") || "{}")); } catch (_) {}
+function savePrefs() { try { localStorage.setItem("prefs", JSON.stringify(P)); } catch (_) {} }
+
+// ───────────────────────── FFT (radix-2, in place) ─────────────────────────
+const fftCache = new Map();
+function getFFT(n) {
+  if (fftCache.has(n)) return fftCache.get(n);
+  const rev = new Uint32Array(n), bits = Math.log2(n);
+  for (let i = 0; i < n; i++) { let r = 0; for (let b = 0; b < bits; b++) r |= ((i >> b) & 1) << (bits - 1 - b); rev[i] = r; }
+  const cos = new Float32Array(n / 2), sin = new Float32Array(n / 2);
+  for (let i = 0; i < n / 2; i++) { cos[i] = Math.cos(2 * Math.PI * i / n); sin[i] = -Math.sin(2 * Math.PI * i / n); }
+  function run(re, im, inverse) {
+    for (let i = 0; i < n; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+    for (let size = 2; size <= n; size <<= 1) {
+      const half = size >> 1, step = n / size;
+      for (let s = 0; s < n; s += size) for (let k = 0; k < half; k++) {
+        const wr = cos[k * step], wi = inverse ? -sin[k * step] : sin[k * step];
+        const a = s + k, b = a + half;
+        const tr = re[b] * wr - im[b] * wi, ti = re[b] * wi + im[b] * wr;
+        re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+      }
+    }
+    if (inverse) for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+  }
+  const f = { n, fwd: (re, im) => run(re, im, false), inv: (re, im) => run(re, im, true) };
+  fftCache.set(n, f); return f;
+}
+function makeWindow(kind, n) {
+  const w = new Float32Array(n);
+  for (let i = 0; i < n; i++) { const x = 2 * Math.PI * i / n;
+    w[i] = kind === "hamming" ? 0.54 - 0.46 * Math.cos(x) : kind === "blackman" ? 0.42 - 0.5 * Math.cos(x) + 0.08 * Math.cos(2 * x) : 0.5 - 0.5 * Math.cos(x); }
+  return w;
+}
+
+// ───────────────────────── Frequency scales and notes ─────────────────────────
+const hzToMel = h => 2595 * Math.log10(1 + h / 700), melToHz = m => 700 * (Math.pow(10, m / 2595) - 1);
+const SCALES = {
+  linear: { warp: h => h, unwarp: y => y, min: 0 },
+  log: { warp: h => Math.log2(Math.max(h, 20)), unwarp: y => Math.pow(2, y), min: 20 },
+  mel: { warp: hzToMel, unwarp: melToHz, min: 0 },
+};
+const NOTES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
+function noteOf(hz) { const m = 69 + 12 * Math.log2(hz / 440), n = Math.round(m);
+  return { name: NOTES[((n % 12) + 12) % 12] + (Math.floor(n / 12) - 1), cents: Math.round((m - n) * 100) }; }
+const fmtTime = t => { const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s.toFixed(2).padStart(5, "0")}`; };
+
+// ───────────────────────── STFT grid ─────────────────────────
+// Frame t is centred on sample t·hop; the signal is zero outside its bounds.
+function makeGrid(sr, n, count) { const hop = n / 4; return { sr, n, hop, count, bins: n / 2 + 1, frames: Math.floor(count / hop) + 1 }; }
+const frameAt = (g, t) => t * g.sr / g.hop, binAt = (g, hz) => hz * g.n / g.sr, hzOfBin = (g, k) => k * g.sr / g.n;
+function readFrame(g, src, t, win, out) {
+  const start = t * g.hop - g.n / 2;
+  for (let i = 0; i < g.n; i++) { const j = start + i; out[i] = j >= 0 && j < src.length ? src[j] * win[i] : 0; }
+}
+
+// ───────────────────────── MFCC ─────────────────────────
+function makeMFCC(bands, coeffs, g) {
+  const lo = hzToMel(20), hi = hzToMel(g.sr / 2), edges = [];
+  for (let i = 0; i < bands + 2; i++) edges.push(binAt(g, melToHz(lo + (hi - lo) * i / (bands + 1))));
+  const filters = [];
+  for (let m = 0; m < bands; m++) {
+    const a = edges[m], c = edges[m + 1], b = edges[m + 2];
+    const s = Math.max(0, Math.ceil(a)), e = Math.min(g.bins - 1, Math.floor(b)), w = [];
+    for (let k = s; k <= e; k++) w.push(Math.max(0, k <= c ? (k - a) / Math.max(c - a, 1e-9) : (b - k) / Math.max(b - c, 1e-9)));
+    filters.push(s <= e ? { s, w } : { s: Math.min(s, g.bins - 1), w: [1] });
+  }
+  const dct = new Float32Array(coeffs * bands);
+  for (let i = 0; i < coeffs; i++) for (let j = 0; j < bands; j++)
+    dct[i * bands + j] = (i === 0 ? Math.sqrt(1 / bands) : Math.sqrt(2 / bands)) * Math.cos(Math.PI * i * (j + 0.5) / bands);
+  const tmp = new Float32Array(bands);
+  return (power, out, off) => {
+    for (let m = 0; m < bands; m++) { const f = filters[m]; let e = 0; for (let i = 0; i < f.w.length; i++) e += f.w[i] * power[f.s + i]; tmp[m] = Math.log(e + 1e-10); }
+    for (let i = 0; i < coeffs; i++) { let s = 0; for (let j = 0; j < bands; j++) s += dct[i * bands + j] * tmp[j]; out[off + i] = s; }
+  };
+}
+
+// ───────────────────────── YIN pitch tracker (FFT difference function) ─────────────────────────
+function makeYIN(sr, minHz, maxHz, thr) {
+  minHz = Math.max(20, minHz); maxHz = Math.max(minHz * 2, Math.min(maxHz, sr / 4));
+  let W = 512; while (W / 2 <= Math.ceil(sr / minHz) + 2) W *= 2;
+  const half = W / 2, fft = getFFT(2 * W);
+  const aR = new Float32Array(2 * W), aI = new Float32Array(2 * W), bR = new Float32Array(2 * W), bI = new Float32Array(2 * W);
+  const x = new Float32Array(W), cum = new Float64Array(W + 1), d = new Float32Array(half);
+  const tauMin = Math.max(2, Math.floor(sr / maxHz)), tauMax = Math.min(half - 2, Math.ceil(sr / minHz));
+  const silence = Math.pow(10, -55 / 20);
+  function estimate(src, start) {
+    let ss = 0;
+    for (let i = 0; i < W; i++) { const j = start + i; const v = j >= 0 && j < src.length ? src[j] : 0; x[i] = v; ss += v * v; }
+    if (Math.sqrt(ss / W) < silence) return [0, 0];
+    aR.fill(0); aI.fill(0); bI.fill(0); bR.fill(0);
+    for (let i = 0; i < half; i++) aR[i] = x[i];
+    for (let i = 0; i < W; i++) bR[i] = x[i];
+    fft.fwd(aR, aI); fft.fwd(bR, bI);
+    for (let k = 0; k < 2 * W; k++) { const re = aR[k] * bR[k] + aI[k] * bI[k], im = aR[k] * bI[k] - aI[k] * bR[k]; aR[k] = re; aI[k] = im; }
+    fft.inv(aR, aI);   // aR[τ] = Σ x[j]·x[j+τ], j < W/2
+    cum[0] = 0; for (let i = 0; i < W; i++) cum[i + 1] = cum[i] + x[i] * x[i];
+    const e0 = cum[half]; let run = 0; d[0] = 1;
+    for (let t = 1; t < half; t++) { const diff = Math.max(0, e0 + (cum[t + half] - cum[t]) - 2 * aR[t]); run += diff; d[t] = run > 0 ? diff * t / run : 1; }
+    let best = -1;
+    for (let t = tauMin; t <= tauMax; t++) if (d[t] < thr) { while (t + 1 <= tauMax && d[t + 1] < d[t]) t++; best = t; break; }
+    if (best < 0) return [0, 0];
+    const s0 = d[best - 1], s1 = d[best], s2 = d[best + 1], den = s0 - 2 * s1 + s2;
+    const shift = Math.abs(den) > 1e-12 ? Math.max(-1, Math.min(1, 0.5 * (s0 - s2) / den)) : 0;
+    return [sr / (best + shift), Math.max(0, Math.min(1, 1 - s1))];
+  }
+  return { W, estimate };
+}
+
+// ───────────────────────── Analysis (STFT levels, MFCC, pitch on one grid) ─────────────────────────
+const DB_LO = -120, DB_HI = 24, LEVEL_DB = new Float32Array(256).map((_, i) => DB_LO + i / 255 * (DB_HI - DB_LO));
+function newAnalysis(g) {
+  return { g, levels: new Uint8Array(g.frames * g.bins), mfcc: new Float32Array(g.frames * P.mfcc), nc: P.mfcc,
+    pitch: new Float32Array(g.frames), conf: new Float32Array(g.frames), pmin: P.pmin, pmax: P.pmax };
+}
+const tick = () => new Promise(r => setTimeout(r, 0));
+async function analyze(A, src, f0, f1, isStale, label) {
+  const g = A.g, win = makeWindow(P.win, g.n), fft = getFFT(g.n);
+  let wsum = 0; for (const v of win) wsum += v; const amp = 2 / wsum;
+  const re = new Float32Array(g.n), im = new Float32Array(g.n), power = new Float32Array(g.bins);
+  const mf = makeMFCC(P.mels, A.nc, g), yin = makeYIN(g.sr, A.pmin, A.pmax, P.thr);
+  f0 = Math.max(0, f0); f1 = Math.min(g.frames, f1);
+  for (let t = f0; t < f1; t++) {
+    readFrame(g, src, t, win, re); im.fill(0); fft.fwd(re, im);
+    const base = t * g.bins;
+    for (let k = 0; k < g.bins; k++) {
+      const p = (re[k] * re[k] + im[k] * im[k]) * amp * amp; power[k] = p;
+      const db = 10 * Math.log10(p + 1e-14);
+      A.levels[base + k] = Math.max(0, Math.min(255, Math.round((db - DB_LO) / (DB_HI - DB_LO) * 255)));
+    }
+    mf(power, A.mfcc, t * A.nc);
+    const [hz, c] = yin.estimate(src, t * g.hop - yin.W / 2); A.pitch[t] = hz; A.conf[t] = c;
+    if ((t - f0) % 300 === 299) { if (label) setBusy(`${label} ${Math.round((t - f0) / (f1 - f0) * 100)}%`); await tick(); if (isStale()) return false; }
+  }
+  return true;
+}
+
+// ───────────────────────── Painted filter: strokes and raster ─────────────────────────
+// Strokes are stored in seconds and Hz; the raster holds one gain per (frame, bin) in half-dB steps.
+function falloff(s, d) { if (d >= 1) return 0; if (d <= s.hard) return 1; const u = (d - s.hard) / (1 - s.hard); return 0.5 * (1 + Math.cos(Math.PI * u)); }
+function strokeFrames(g, s) {
+  let lo = Infinity, hi = -Infinity; for (const p of s.stamps) { lo = Math.min(lo, p.t); hi = Math.max(hi, p.t); }
+  return [Math.max(0, Math.floor(frameAt(g, lo - s.rt))), Math.min(g.frames, Math.ceil(frameAt(g, hi + s.rt)) + 1)];
+}
+function newRaster(g) { return { g, v: null, active: new Uint8Array(g.frames) }; }
+function rasterAdd(R, s) {
+  const g = R.g, [f0, f1] = strokeFrames(g, s); if (f1 <= f0 || !s.gain) return [0, 0];
+  const sc = SCALES[s.scale], axis = new Float32Array(g.bins); for (let k = 0; k < g.bins; k++) axis[k] = sc.warp(hzOfBin(g, k));
+  const w = new Float32Array((f1 - f0) * g.bins); let lb = g.bins, hb = 0;
+  for (const p of s.stamps) {
+    const yc = sc.warp(p.hz), b0 = Math.max(0, Math.floor(binAt(g, sc.unwarp(yc - s.ra)))), b1 = Math.min(g.bins - 1, Math.ceil(binAt(g, sc.unwarp(yc + s.ra))));
+    const a = Math.max(f0, Math.floor(frameAt(g, p.t - s.rt))), b = Math.min(f1 - 1, Math.ceil(frameAt(g, p.t + s.rt)));
+    if (b0 > b1 || a > b) continue; lb = Math.min(lb, b0); hb = Math.max(hb, b1);
+    for (let f = a; f <= b; f++) { const dx = (f * g.hop / g.sr - p.t) / s.rt; if (Math.abs(dx) >= 1) continue;
+      const row = (f - f0) * g.bins;
+      for (let k = b0; k <= b1; k++) { const dy = (axis[k] - yc) / s.ra, ww = falloff(s, Math.sqrt(dx * dx + dy * dy)); if (ww > w[row + k]) w[row + k] = ww; } }
+  }
+  if (lb > hb) return [0, 0];
+  if (!R.v) R.v = new Int8Array(g.frames * g.bins);
+  const gh = s.gain * 2;
+  for (let f = f0; f < f1; f++) { const row = (f - f0) * g.bins, base = f * g.bins; let any = false;
+    for (let k = lb; k <= hb; k++) if (w[row + k] > 0) { R.v[base + k] = Math.max(-128, Math.min(48, R.v[base + k] + Math.round(gh * w[row + k]))); any = true; }
+    if (any) R.active[f] = 1; }
+  return [f0, f1];
+}
+const GAIN = new Float32Array(256).map((_, i) => Math.pow(10, (i - 128) * 0.5 / 20));
+
+// Weighted overlap-add resynthesis of frames f0..f1 (and their neighbours) into `out`.
+function resynth(src, out, g, R, f0, f1) {
+  const half = g.n / 2, s0 = Math.max(0, f0 * g.hop - half), s1 = Math.min(g.count, (f1 - 1) * g.hop + half);
+  if (s1 <= s0) return [0, 0];
+  const t0 = Math.max(0, Math.floor((s0 - half) / g.hop) + 1), t1 = Math.min(g.frames, Math.ceil((s1 + half) / g.hop));
+  const win = makeWindow(P.win, g.n), fft = getFFT(g.n), acc = new Float32Array(s1 - s0), norm = new Float32Array(s1 - s0);
+  const re = new Float32Array(g.n), im = new Float32Array(g.n);
+  for (let t = t0; t < t1; t++) {
+    readFrame(g, src, t, win, re);
+    if (R.active[t]) {
+      im.fill(0); fft.fwd(re, im); const base = t * g.bins;
+      for (let k = 0; k < g.bins; k++) { const gn = GAIN[R.v[base + k] + 128]; re[k] *= gn; im[k] *= gn; if (k > 0 && k < half) { re[g.n - k] *= gn; im[g.n - k] *= gn; } }
+      fft.inv(re, im);
+    }
+    const start = t * g.hop - half;
+    for (let i = Math.max(0, s0 - start); i < Math.min(g.n, s1 - start); i++) { const j = start + i - s0; acc[j] += re[i] * win[i]; norm[j] += win[i] * win[i]; }
+  }
+  for (let j = 0; j < acc.length; j++) out[s0 + j] = norm[j] > 1e-8 ? acc[j] / norm[j] : src[s0 + j];
+  return [s0, s1];
+}
+
+// ───────────────────────── State ─────────────────────────
+const S = { name: "", sr: 44100, orig: null, filt: null, g: null, aO: null, aF: null, strokes: [], undo: [], redo: [], R: null,
+  start: 0, dur: 1, hear: "filtered", show: "filtered", playing: false, src: null, ctxStart: 0, offset: 0,
+  pointer: null, gen: 0, peak: 0 };
+let ctx = null;
+const $ = id => document.getElementById(id);
+function setBusy(t) { const b = $("busy"); b.hidden = !t; b.textContent = t || ""; }
+const shown = () => (S.show === "filtered" && S.strokes.length && S.aF) ? S.aF : S.aO;
+
+async function install(name, samples, sr) {
+  stopPlayback(); S.offset = 0;
+  S.name = name; S.sr = sr; S.orig = samples; S.filt = samples.slice(); S.strokes = []; S.undo = []; S.redo = [];
+  await reanalyse(true);
+  S.start = 0; S.dur = S.g.count / sr;
+  $("fileName").textContent = name;
+  $("info").textContent = `${fmtTime(S.dur)} · ${Math.round(sr)} Hz · mono`;
+  refreshAll();
+}
+
+async function reanalyse(resetFiltered) {
+  const gen = ++S.gen;
+  S.g = makeGrid(S.sr, P.fft, S.orig.length);
+  const aO = newAnalysis(S.g);
+  if (!await analyze(aO, S.orig, 0, S.g.frames, () => gen !== S.gen, "Analysing")) return;
+  S.aO = aO; S.R = newRaster(S.g); for (const s of S.strokes) rasterAdd(S.R, s);
+  S.filt = S.orig.slice();
+  if (S.strokes.length) resynth(S.orig, S.filt, S.g, S.R, 0, S.g.frames);
+  S.aF = newAnalysis(S.g); S.aF.levels.set(aO.levels); S.aF.mfcc.set(aO.mfcc); S.aF.pitch.set(aO.pitch); S.aF.conf.set(aO.conf);
+  if (S.strokes.length) await analyze(S.aF, S.filt, 0, S.g.frames, () => gen !== S.gen, "Analysing filtered");
+  setBusy(""); afterRender();
+}
+
+// Re-render the filtered audio over the frames an edit touched, swap it into playback, then refresh its analysis.
+async function renderFrames(f0, f1) {
+  if (f1 <= f0) return;
+  const gen = ++S.gen;
+  const [s0, s1] = resynth(S.orig, S.filt, S.g, S.R, f0, f1);
+  afterRender();
+  const g = S.g, margin = Math.ceil(makeYIN(g.sr, S.aF.pmin, S.aF.pmax, P.thr).W / 2 / g.hop) + 1;
+  const a = Math.max(0, Math.floor((s0 - g.n / 2) / g.hop) - margin), b = Math.min(g.frames, Math.ceil((s1 + g.n / 2) / g.hop) + margin);
+  if (await analyze(S.aF, S.filt, a, b, () => gen !== S.gen, "Updating")) { setBusy(""); specDirty = true; refreshAll(); }
+}
+function afterRender() {
+  let pk = 0; for (let i = 0; i < S.filt.length; i++) { const v = Math.abs(S.filt[i]); if (v > pk) pk = v; } S.peak = pk;
+  if (S.playing && S.hear === "filtered") restartPlayback();
+  specDirty = true; refreshAll();
+}
+
+function addStroke(s) { S.undo.push(S.strokes); S.redo = []; S.strokes = S.strokes.concat([s]); const [a, b] = rasterAdd(S.R, s); renderFrames(a, b); }
+function applyHistory(changed) {
+  S.R = newRaster(S.g); for (const s of S.strokes) rasterAdd(S.R, s);
+  let a = Infinity, b = 0; for (const s of changed) { const [x, y] = strokeFrames(S.g, s); a = Math.min(a, x); b = Math.max(b, y); }
+  if (b > a) renderFrames(a, b); else refreshAll();
+}
+const diff = (x, y) => x.filter(s => !y.includes(s)).concat(y.filter(s => !x.includes(s)));
+function undo() { if (!S.undo.length) return; const prev = S.undo.pop(); S.redo.push(S.strokes); const ch = diff(S.strokes, prev); S.strokes = prev; applyHistory(ch); }
+function redo() { if (!S.redo.length) return; const next = S.redo.pop(); S.undo.push(S.strokes); const ch = diff(S.strokes, next); S.strokes = next; applyHistory(ch); }
+function clearAll() { if (!S.strokes.length) return; S.undo.push(S.strokes); S.redo = []; const ch = S.strokes; S.strokes = []; applyHistory(ch); }
+
+// ───────────────────────── Playback ─────────────────────────
+function ensureCtx() { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); return ctx; }
+function now() { return S.playing ? S.offset + (ctx.currentTime - S.ctxStart) : S.offset; }
+function startPlayback(at) {
+  ensureCtx(); if (ctx.state === "suspended") ctx.resume();
+  const data = S.hear === "filtered" ? S.filt : S.orig, buf = ctx.createBuffer(1, data.length, S.sr);
+  buf.copyToChannel(data, 0);
+  const src = ctx.createBufferSource(); src.buffer = buf; src.connect(ctx.destination);
+  const dur = data.length / S.sr; if (at >= dur) at = 0;
+  src.onended = () => { if (S.src === src && S.playing) { S.playing = false; S.offset = P.loop ? 0 : dur; if (P.loop) startPlayback(0); updatePlay(); } };
+  src.start(0, at); S.src = src; S.ctxStart = ctx.currentTime; S.offset = at; S.playing = true; updatePlay();
+}
+function stopPlayback() { if (S.src) { const s = S.src; S.src = null; try { s.stop(); } catch (_) {} } if (S.playing) { S.offset = now(); S.playing = false; } updatePlay(); }
+function restartPlayback() { const t = now(); stopPlayback(); startPlayback(t); }
+function togglePlay() { if (!S.orig) return; if (S.playing) stopPlayback(); else startPlayback(S.offset); }
+function seek(t) { t = Math.max(0, Math.min(S.dur, t)); if (S.playing) { stopPlayback(); startPlayback(t); } else S.offset = t; drawHeads(); }
+function updatePlay() {
+  $("playLabel").textContent = S.playing ? "Pause" : "Play";
+  $("playIcon").innerHTML = S.playing ? '<path d="M7 4h4v16H7zM14 4h4v16h-4z" fill="currentColor"/>' : '<path d="M7 4l13 8-13 8z" fill="currentColor"/>';
+}
+
+// ───────────────────────── Colour maps ─────────────────────────
+const CMAPS = {
+  magma: [[-0.0021, -0.00075, -0.0054], [0.2517, 0.6775, 2.494], [8.3537, -3.5777, 0.3145], [-27.6687, 14.2647, -13.6492], [52.1761, -27.9436, 12.9442], [-50.7685, 29.0466, 4.2342], [18.6557, -11.4898, -5.602]],
+  inferno: [[0.0002, 0.0017, -0.0195], [0.1065, 0.564, 3.9327], [11.6025, -3.9729, -15.9424], [-41.704, 17.4364, 44.3541], [77.1629, -33.4024, -81.8073], [-71.3194, 32.6261, 73.2095], [25.1311, -12.2427, -23.0703]],
+  viridis: [[0.2777, 0.0054, 0.3341], [0.1051, 1.4046, 1.3846], [-0.3309, 0.2148, 0.0951], [-4.6342, -5.7991, -19.3324], [6.2283, 14.1799, 56.6906], [4.7764, -13.7451, -65.353], [-5.4355, 4.6459, 26.3124]],
+};
+function lut(name) {
+  const out = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) { const t = i / 255; let r = t, g = t, b = t;
+    if (CMAPS[name]) { r = g = b = 0; let p = 1; for (const c of CMAPS[name]) { r += c[0] * p; g += c[1] * p; b += c[2] * p; p *= t; } }
+    const q = v => Math.round(Math.max(0, Math.min(1, v)) * 255);
+    out[i] = (255 << 24) | (q(b) << 16) | (q(g) << 8) | q(r); }
+  return out;
+}
+
+// ───────────────────────── Drawing ─────────────────────────
+const GUT = 52, RULER = 20, dpr = () => window.devicePixelRatio || 1;
+let specDirty = true, specImage = null;
+function sizeCanvas(c) { const r = c.getBoundingClientRect(), d = dpr(); const w = Math.max(1, Math.round(r.width * d)), h = Math.max(1, Math.round(r.height * d));
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; return true; } return false; }
+function axisRange() { const sc = SCALES[P.scale]; return { sc, lo: sc.warp(sc.min), hi: sc.warp(S.sr / 2), min: sc.min, max: S.sr / 2 }; }
+function plotRect(c) { const W = c.clientWidth, H = c.clientHeight; return { x: GUT, y: RULER, w: Math.max(1, W - GUT), h: Math.max(1, H - RULER) }; }
+const timeAtX = (x, pr) => S.start + (x - pr.x) / pr.w * S.dur;
+const xAtTime = (t, pr) => pr.x + (t - S.start) / S.dur * pr.w;
+function hzAtY(y, pr) { const a = axisRange(); return a.sc.unwarp(a.lo + (1 - (y - pr.y) / pr.h) * (a.hi - a.lo)); }
+function yAtHz(hz, pr) { const a = axisRange(); return pr.y + (1 - (a.sc.warp(hz) - a.lo) / (a.hi - a.lo)) * pr.h; }
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function drawSpec() {
+  const c = $("spec"), A = shown(); sizeCanvas(c); sizeCanvas($("overlay"));
+  const x = c.getContext("2d"), d = dpr(), pr = plotRect(c);
+  x.setTransform(1, 0, 0, 1, 0, 0); x.fillStyle = "#000"; x.fillRect(0, 0, c.width, c.height);
+  if (!A) return;
+  const g = A.g, W = Math.round(pr.w * d), H = Math.round(pr.h * d);
+  const img = x.createImageData(W, H), px = new Uint32Array(img.data.buffer), L = lut(P.cmap);
+  const col = new Uint32Array(256); for (let i = 0; i < 256; i++) col[i] = L[Math.max(0, Math.min(255, Math.round((LEVEL_DB[i] - P.floor) / (0 - P.floor) * 255)))];
+  const rows = [], cols = [];
+  for (let yy = 0; yy < H; yy++) { const hi = binAt(g, hzAtY(pr.y + yy / d, pr)), lo = binAt(g, hzAtY(pr.y + (yy + 1) / d, pr));
+    const a = Math.max(0, Math.min(g.bins - 1, Math.round(lo))); rows.push([a, Math.max(a + 1, Math.min(g.bins, Math.round(hi)))]); }
+  for (let xx = 0; xx < W; xx++) { const a = Math.round(frameAt(g, timeAtX(pr.x + xx / d, pr))), b = Math.round(frameAt(g, timeAtX(pr.x + (xx + 1) / d, pr))); cols.push([a, Math.max(a + 1, b)]); }
+  const maskOn = P.mask && S.R && S.R.v, R = S.R;
+  for (let xx = 0; xx < W; xx++) {
+    const f0 = Math.max(0, cols[xx][0]), f1 = Math.min(g.frames, cols[xx][1]); if (f0 >= f1) { for (let yy = 0; yy < H; yy++) px[yy * W + xx] = L[0]; continue; }
+    const fm = (f0 + f1) >> 1, act = maskOn && R.active[fm];
+    for (let yy = 0; yy < H; yy++) {
+      const [b0, b1] = rows[yy]; let best = 0;
+      for (let f = f0; f < f1; f++) { const base = f * g.bins; for (let k = b0; k < b1; k++) { const v = A.levels[base + k]; if (v > best) best = v; } }
+      let p = col[best];
+      if (act) { const db = R.v[fm * g.bins + ((b0 + b1) >> 1)] * 0.5;
+        if (db) { const al = Math.min(0.6, Math.abs(db) / 40 * 0.6 + 0.08), tint = db < 0 ? [79, 176, 255] : [255, 181, 71];
+          const r = p & 255, gg = (p >> 8) & 255, b = (p >> 16) & 255;
+          p = (255 << 24) | (Math.round(b * (1 - al) + tint[2] * al) << 16) | (Math.round(gg * (1 - al) + tint[1] * al) << 8) | Math.round(r * (1 - al) + tint[0] * al); } }
+      px[yy * W + xx] = p;
+    }
+  }
+  x.putImageData(img, Math.round(pr.x * d), Math.round(pr.y * d));
+  // Axes
+  x.setTransform(d, 0, 0, d, 0, 0);
+  x.fillStyle = css("--panel"); x.fillRect(0, 0, GUT, c.clientHeight); x.fillRect(GUT, 0, pr.w, RULER);
+  x.font = `10px ${css("--mono")}`; x.fillStyle = css("--muted"); x.textBaseline = "middle"; x.textAlign = "right";
+  const ticks = P.scale === "linear" ? (() => { const st = nice(S.sr / 2 / 6), a = []; for (let h = 0; h <= S.sr / 2; h += st) a.push(h); return a; })()
+    : [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000].filter(h => h <= S.sr / 2);
+  for (const h of ticks) { const y = yAtHz(h, pr); if (y < pr.y - 1 || y > pr.y + pr.h + 1) continue;
+    x.fillText(h >= 1000 ? (h / 1000) + "k" : String(h), GUT - 8, Math.min(pr.y + pr.h - 6, Math.max(pr.y + 6, y))); x.fillRect(GUT - 5, y - 0.5, 5, 1); }
+  x.textAlign = "left"; x.fillText("Hz", 6, 10);
+  const step = nice(S.dur / Math.max(2, pr.w / 90));
+  for (let t = Math.ceil(S.start / step) * step; t <= S.start + S.dur; t += step) { const xx = xAtTime(t, pr);
+    x.fillRect(xx, RULER - 6, 1, 6); const lab = step < 1 ? t.toFixed(2) + "s" : fmtTime(t).replace(".00", "");
+    if (xx + 3 + x.measureText(lab).width <= pr.x + pr.w) x.fillText(lab, xx + 3, 9); }
+}
+function nice(raw) { const p = Math.pow(10, Math.floor(Math.log10(raw))); for (const m of [1, 2, 5, 10]) if (m * p >= raw) return m * p; return 10 * p; }
+
+let strokePts = [];
+function drawOverlay() {
+  const c = $("overlay"), x = c.getContext("2d"), d = dpr(), pr = plotRect(c);
+  x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, c.clientWidth, c.clientHeight);
+  if (!S.aO) return;
+  const r = P.size / 2, color = P.gain < 0 ? css("--cut") : css("--boost");
+  if (strokePts.length) { x.save(); x.beginPath(); x.rect(pr.x, pr.y, pr.w, pr.h); x.clip(); x.globalAlpha = 0.22; x.fillStyle = color;
+    x.beginPath(); for (const p of strokePts) { x.moveTo(p.x + r, p.y); x.arc(p.x, p.y, r, 0, Math.PI * 2); } x.fill(); x.restore(); }
+  const px = xAtTime(now(), pr);
+  if (px >= pr.x && px <= pr.x + pr.w) { x.fillStyle = "#fff"; x.fillRect(px - 0.75, 0, 1.5, c.clientHeight); }
+  if (S.pointer && S.pointer.inPlot) { x.strokeStyle = color; x.lineWidth = 1.5; x.beginPath(); x.arc(S.pointer.x, S.pointer.y, r, 0, Math.PI * 2); x.stroke(); }
+}
+
+function drawMFCC() {
+  const c = $("mfcc"), A = shown(); sizeCanvas(c); const x = c.getContext("2d"), d = dpr();
+  x.setTransform(1, 0, 0, 1, 0, 0); x.fillStyle = css("--panel"); x.fillRect(0, 0, c.width, c.height); if (!A) return;
+  const n = A.nc, rows = n - 1, g = A.g, mean = new Float64Array(n), sd = new Float64Array(n);
+  for (let t = 0; t < g.frames; t++) for (let i = 0; i < n; i++) mean[i] += A.mfcc[t * n + i];
+  for (let i = 0; i < n; i++) mean[i] /= g.frames;
+  for (let t = 0; t < g.frames; t++) for (let i = 0; i < n; i++) { const v = A.mfcc[t * n + i] - mean[i]; sd[i] += v * v; }
+  for (let i = 0; i < n; i++) sd[i] = Math.max(1e-6, Math.sqrt(sd[i] / g.frames));
+  const W = Math.round((c.clientWidth - GUT) * d), img = x.createImageData(Math.max(1, W), rows), px = new Uint32Array(img.data.buffer), L = lut(P.cmap);
+  const pr = { x: GUT, w: c.clientWidth - GUT };
+  for (let xx = 0; xx < W; xx++) { const t = Math.round(frameAt(g, timeAtX(GUT + (xx + 0.5) / d, pr))); if (t < 0 || t >= g.frames) continue;
+    for (let r = 0; r < rows; r++) { const i = r + 1, z = (A.mfcc[t * n + i] - mean[i]) / sd[i]; px[(rows - 1 - r) * W + xx] = L[Math.max(0, Math.min(255, Math.round((z + 2.5) / 5 * 255)))]; } }
+  const tmp = document.createElement("canvas"); tmp.width = Math.max(1, W); tmp.height = rows; tmp.getContext("2d").putImageData(img, 0, 0);
+  x.imageSmoothingEnabled = false; x.drawImage(tmp, Math.round(GUT * d), 0, W, c.height);
+  x.setTransform(d, 0, 0, d, 0, 0); x.font = `10px ${css("--mono")}`; x.fillStyle = css("--faint"); x.textAlign = "right"; x.fillText("c1", GUT - 8, c.clientHeight - 6);
+}
+
+function drawPitch() {
+  const c = $("pitch"), A = shown(); sizeCanvas(c); const x = c.getContext("2d"), d = dpr();
+  x.setTransform(d, 0, 0, d, 0, 0); const W = c.clientWidth, H = c.clientHeight; x.clearRect(0, 0, W, H); if (!A) return;
+  const lo = A.pmin, hi = A.pmax, yOf = hz => 6 + (1 - Math.log(hz / lo) / Math.log(hi / lo)) * (H - 12), pr = { x: GUT, w: W - GUT };
+  x.font = `10px ${css("--mono")}`; x.textAlign = "right"; x.textBaseline = "middle";
+  for (let k = 1; k <= 8; k++) { const hz = 32.703 * Math.pow(2, k - 1); if (hz < lo || hz > hi) continue; const y = yOf(hz);
+    x.fillStyle = css("--line"); x.fillRect(GUT, y, W - GUT, 1); x.fillStyle = css("--muted"); x.fillText("C" + k, GUT - 8, y); }
+  const g = A.g, f0 = Math.max(0, Math.floor(frameAt(g, S.start)) - 1), f1 = Math.min(g.frames, Math.ceil(frameAt(g, S.start + S.dur)) + 2);
+  const step = Math.max(1, Math.floor((f1 - f0) / Math.max(1, W - GUT)));
+  x.strokeStyle = css("--accent"); x.lineWidth = 2; x.lineJoin = "round"; x.beginPath(); let last = 0;
+  x.save(); x.beginPath(); x.rect(GUT, 0, W - GUT, H); x.clip(); x.beginPath();
+  for (let t = f0; t < f1; t += step) { const hz = A.pitch[t], ok = hz > 0 && hz >= lo && hz <= hi;
+    if (ok) { const X = xAtTime(t * g.hop / g.sr, pr), Y = yOf(hz); if (!last || Math.abs(Math.log2(hz / last)) > 0.5) x.moveTo(X, Y); else x.lineTo(X, Y); last = hz; } else last = 0; }
+  x.stroke(); x.restore();
+}
+
+function drawHeads() {
+  drawOverlay();
+  for (const id of ["mfccHead", "pitchHead"]) { const c = $(id); sizeCanvas(c); const x = c.getContext("2d"), d = dpr();
+    x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, c.clientWidth, c.clientHeight);
+    const X = xAtTime(now(), { x: GUT, w: c.clientWidth - GUT }); if (X >= GUT && X <= c.clientWidth) { x.fillStyle = css("--ink"); x.fillRect(X - 0.75, 0, 1.5, c.clientHeight); } }
+  drawInspector();
+}
+
+function drawInspector() {
+  const A = shown(); if (!A) return;
+  const t = S.pointer && S.pointer.inPlot ? S.pointer.t : now(), g = A.g, f = Math.max(0, Math.min(g.frames - 1, Math.round(frameAt(g, t))));
+  $("atLabel").firstChild.textContent = S.pointer && S.pointer.inPlot ? "Under pointer " : "At playhead "; $("atTime").textContent = fmtTime(t);
+  const hz = A.pitch[f];
+  if (hz > 0) { const n = noteOf(hz); $("noteName").textContent = n.name; $("noteCents").textContent = (n.cents >= 0 ? "+" : "") + n.cents + "¢";
+    $("noteHz").innerHTML = `${hz.toFixed(1)} Hz<small>confidence ${Math.round(A.conf[f] * 100)}%</small>`; }
+  else { $("noteName").textContent = "–"; $("noteCents").textContent = ""; $("noteHz").innerHTML = "No pitch<small>unvoiced or silent</small>"; }
+  // Spectrum slice: original (grey) and filtered (cut colour) once anything is painted.
+  const c = $("slice"); sizeCanvas(c); const x = c.getContext("2d"), d = dpr(), W = c.clientWidth, H = c.clientHeight;
+  x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H);
+  const L = 4, B = H - 16, R = W - 30, top = 4, lx = Math.log2(20), hx = Math.log2(g.sr / 2);
+  const X = hzv => L + (Math.log2(hzv) - lx) / (hx - lx) * (R - L), Y = db => top + (12 - Math.max(P.floor, db)) / (12 - P.floor) * (B - top);
+  x.font = `10px ${css("--mono")}`; x.fillStyle = css("--faint"); x.textBaseline = "middle"; x.textAlign = "left";
+  for (const db of [0, -30, -60, -90]) { if (db < P.floor) continue; x.fillStyle = css("--line"); x.fillRect(L, Y(db), R - L, 1); x.fillStyle = css("--faint"); x.fillText(String(db), R + 4, Y(db)); }
+  x.textAlign = "center"; for (const h of [100, 1000, 10000]) if (h < g.sr / 2) x.fillText(h >= 1000 ? h / 1000 + "k" : h, X(h), H - 6);
+  const line = (An, color) => { if (!An) return; x.strokeStyle = color; x.lineWidth = 1.4; x.beginPath();
+    for (let i = 0; i < 160; i++) { const a = Math.pow(2, lx + (hx - lx) * i / 160), b = Math.pow(2, lx + (hx - lx) * (i + 1) / 160);
+      const k0 = Math.max(0, Math.round(binAt(g, a))), k1 = Math.min(g.bins - 1, Math.max(k0, Math.round(binAt(g, b)))); let m = 0;
+      for (let k = k0; k <= k1; k++) m = Math.max(m, An.levels[f * g.bins + k]);
+      const px = X(Math.sqrt(a * b)), py = Y(LEVEL_DB[m]); i ? x.lineTo(px, py) : x.moveTo(px, py); } x.stroke(); };
+  line(S.aO, S.strokes.length ? css("--faint") : css("--cut"));
+  if (S.strokes.length) line(S.aF, css("--cut"));
+  if (S.pointer && S.pointer.inPlot) { x.strokeStyle = css("--muted"); x.setLineDash([3, 3]); x.beginPath(); x.moveTo(X(Math.max(20, S.pointer.hz)), top); x.lineTo(X(Math.max(20, S.pointer.hz)), B); x.stroke(); x.setLineDash([]); }
+  // MFCC bars
+  const bc = $("bars"); sizeCanvas(bc); const bx = bc.getContext("2d"), BW = bc.clientWidth, BH = bc.clientHeight;
+  bx.setTransform(d, 0, 0, d, 0, 0); bx.clearRect(0, 0, BW, BH);
+  const n = A.nc, vals = []; for (let i = 1; i < n; i++) vals.push(A.mfcc[f * n + i]);
+  const mx = Math.max(1, ...vals.map(Math.abs)), mid = (BH - 14) / 2, bw = BW / vals.length;
+  bx.fillStyle = css("--line"); bx.fillRect(0, mid, BW, 1);
+  vals.forEach((v, i) => { bx.fillStyle = v >= 0 ? css("--cut") : css("--boost"); const h = v / mx * (mid - 2); bx.fillRect(i * bw + 2, h >= 0 ? mid - h : mid, bw - 4, Math.abs(h)); });
+  bx.fillStyle = css("--faint"); bx.font = `9px ${css("--mono")}`; bx.textAlign = "center";
+  vals.forEach((_, i) => { if (vals.length <= 14 || i % 2 === 0) bx.fillText("c" + (i + 1), i * bw + bw / 2, BH - 4); });
+  $("mfccRange").textContent = `c1–c${n - 1}`;
+  // Pointer readout
+  const pc = $("pointerCard"); pc.hidden = !(S.pointer && S.pointer.inPlot);
+  if (!pc.hidden) { const k = Math.max(0, Math.min(g.bins - 1, Math.round(binAt(g, S.pointer.hz)))), nn = noteOf(S.pointer.hz);
+    $("pFreq").textContent = `${Math.round(S.pointer.hz)} Hz (${nn.name} ${nn.cents >= 0 ? "+" : ""}${nn.cents}¢)`;
+    $("pLevel").textContent = `${LEVEL_DB[A.levels[f * g.bins + k]].toFixed(1)} dB`;
+    const gdb = S.R && S.R.v ? S.R.v[f * g.bins + k] * 0.5 : 0; $("pGain").textContent = gdb ? (gdb > 0 ? "+" : "") + gdb.toFixed(1) + " dB" : "—"; }
+}
+
+function refreshAll() {
+  if (specDirty) { drawSpec(); specDirty = false; }
+  drawMFCC(); drawPitch(); drawHeads();
+  $("undoBtn").disabled = !S.undo.length; $("redoBtn").disabled = !S.redo.length; $("clearBtn").disabled = !S.strokes.length;
+  $("fitBtn").disabled = !S.g || S.dur >= S.g.count / S.sr - 1e-9;
+  const clip = $("clip"); clip.hidden = !(S.peak > 1 && S.strokes.length); if (!clip.hidden) clip.textContent = `Filtered audio peaks at +${(20 * Math.log10(S.peak)).toFixed(1)} dBFS (export normalises it)`;
+}
+function frame() { if (S.playing) { const t = now(); if (S.dur < S.g.count / S.sr && (t > S.start + S.dur || t < S.start)) { setView(t - S.dur * 0.05, S.dur); } drawHeads(); } requestAnimationFrame(frame); }
+
+function setView(start, dur) {
+  if (!S.g) return; const total = S.g.count / S.sr, minD = Math.min(total, Math.max(0.05, S.g.hop * 32 / S.sr));
+  dur = Math.max(minD, Math.min(total, dur)); start = Math.max(0, Math.min(total - dur, start));
+  if (start !== S.start || dur !== S.dur) { S.start = start; S.dur = dur; specDirty = true; refreshAll(); }
+}
+
+// ───────────────────────── Painting and navigation ─────────────────────────
+const ov = $("overlay");
+let painting = false, scrubbing = false;
+function local(e) { const r = ov.getBoundingClientRect(); const p = { x: e.clientX - r.left, y: e.clientY - r.top }, pr = plotRect(ov);
+  p.inPlot = p.x >= pr.x && p.x <= pr.x + pr.w && p.y >= pr.y && p.y <= pr.y + pr.h; p.t = timeAtX(p.x, pr); p.hz = hzAtY(p.y, pr); return p; }
+ov.addEventListener("pointerdown", e => {
+  if (!S.g) return; const p = local(e); ov.setPointerCapture(e.pointerId);
+  if (p.y < RULER || e.altKey) { scrubbing = true; seek(p.t); return; }
+  if (p.inPlot) { painting = true; strokePts = [p]; drawOverlay(); e.preventDefault(); }
+});
+ov.addEventListener("pointermove", e => {
+  if (!S.g) return; const p = local(e); S.pointer = p;
+  if (scrubbing) { seek(p.t); return; }
+  if (painting) { const last = strokePts[strokePts.length - 1], sp = Math.max(1, P.size * 0.2), dist = Math.hypot(p.x - last.x, p.y - last.y);
+    if (dist >= sp) { const n = Math.floor(dist / sp); for (let i = 1; i <= n; i++) strokePts.push({ x: last.x + (p.x - last.x) * i / n, y: last.y + (p.y - last.y) * i / n }); } }
+  drawHeads();
+});
+function endStroke() {
+  scrubbing = false; if (!painting) return; painting = false;
+  const pr = plotRect(ov), a = axisRange(), r = P.size / 2;
+  const stamps = strokePts.map(p => ({ t: timeAtX(p.x, pr), hz: hzAtY(Math.min(Math.max(p.y, pr.y), pr.y + pr.h), pr) }));
+  strokePts = [];
+  addStroke({ gain: P.gain, rt: r / pr.w * S.dur, ra: r / pr.h * (a.hi - a.lo), hard: P.hard, scale: P.scale, stamps });
+}
+ov.addEventListener("pointerup", endStroke); ov.addEventListener("pointercancel", () => { painting = false; strokePts = []; drawOverlay(); });
+ov.addEventListener("pointerleave", () => { if (!painting) { S.pointer = null; drawHeads(); } });
+ov.addEventListener("wheel", e => {
+  if (!S.g) return; const p = local(e);
+  if (e.ctrlKey || e.metaKey) { e.preventDefault(); const f = Math.exp(-e.deltaY * 0.01), d = S.dur / f, frac = (p.t - S.start) / S.dur; setView(p.t - frac * d, d); }
+  else if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey) { e.preventDefault(); const dx = e.shiftKey ? e.deltaY : e.deltaX; setView(S.start + dx / plotRect(ov).w * S.dur, S.dur); }
+}, { passive: false });
+
+// ───────────────────────── Files ─────────────────────────
+async function openFile(file) {
+  stopPlayback(); setBusy(`Decoding ${file.name}…`);
+  try {
+    const buf = await file.arrayBuffer(); ensureCtx();
+    const audio = await ctx.decodeAudioData(buf);
+    const n = audio.length, mono = new Float32Array(n);
+    for (let ch = 0; ch < audio.numberOfChannels; ch++) { const d = audio.getChannelData(ch); for (let i = 0; i < n; i++) mono[i] += d[i] / audio.numberOfChannels; }
+    await install(file.name, mono, audio.sampleRate);
+  } catch (err) { setBusy(""); alertBar(`Couldn't read ${file.name}. This browser can't decode it; try WAV, MP3, AAC/M4A or MP4.`); }
+}
+function alertBar(msg) { $("info").textContent = msg; }
+$("openBtn").onclick = () => $("fileInput").click();
+$("fileInput").onchange = e => { const f = e.target.files[0]; if (f) openFile(f); e.target.value = ""; };
+let dropEl = null;
+document.addEventListener("dragover", e => { e.preventDefault(); if (!dropEl) { dropEl = document.createElement("div"); dropEl.className = "drop"; dropEl.textContent = "Drop an audio or video file"; $("timeline").style.position = "relative"; $("timeline").appendChild(dropEl); } });
+document.addEventListener("dragleave", e => { if (e.relatedTarget === null && dropEl) { dropEl.remove(); dropEl = null; } });
+document.addEventListener("drop", e => { e.preventDefault(); if (dropEl) { dropEl.remove(); dropEl = null; } const f = e.dataTransfer.files[0]; if (f) openFile(f); });
+
+// Export: a WAV inside a .zip (the download allowlist has no .wav).
+function wavBytes(data, sr) {
+  let pk = 0; for (const v of data) pk = Math.max(pk, Math.abs(v)); const sc = pk > 1 ? 0.999 / pk : 1;
+  const buf = new ArrayBuffer(44 + data.length * 2), v = new DataView(buf), w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, "RIFF"); v.setUint32(4, 36 + data.length * 2, true); w(8, "WAVE"); w(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, data.length * 2, true);
+  for (let i = 0; i < data.length; i++) v.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, Math.round(data[i] * sc * 32767))), true);
+  return new Uint8Array(buf);
+}
+const CRC = new Uint32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+function zipOne(name, bytes) {
+  let crc = 0xffffffff; for (const b of bytes) crc = CRC[(crc ^ b) & 255] ^ (crc >>> 8); crc = (crc ^ 0xffffffff) >>> 0;
+  const nm = new TextEncoder().encode(name), lh = new DataView(new ArrayBuffer(30)), ch = new DataView(new ArrayBuffer(46)), end = new DataView(new ArrayBuffer(22));
+  lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint32(14, crc, true); lh.setUint32(18, bytes.length, true); lh.setUint32(22, bytes.length, true); lh.setUint16(26, nm.length, true);
+  ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint32(16, crc, true); ch.setUint32(20, bytes.length, true); ch.setUint32(24, bytes.length, true); ch.setUint16(28, nm.length, true);
+  const cdOff = 30 + nm.length + bytes.length;
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, 1, true); end.setUint16(10, 1, true); end.setUint32(12, 46 + nm.length, true); end.setUint32(16, cdOff, true);
+  return new Blob([lh, nm, bytes, ch, nm, end], { type: "application/zip" });
+}
+let downloads = null;
+(async () => { try { downloads = window.claude ? await window.claude.use("downloads") : null; } catch (_) { downloads = null; } $("exportBtn").hidden = !downloads; })();
+$("exportBtn").onclick = async () => {
+  if (!downloads || !S.filt) return; const stem = S.name.replace(/\.[^.]+$/, "") + " (filtered)";
+  try { await downloads.save({ filename: stem + ".zip", data: zipOne(stem + ".wav", wavBytes(S.filt, Math.round(S.sr))) }); $("info").textContent = "Saved " + stem + ".zip"; }
+  catch (e) { if (e && e.code !== "declined") $("info").textContent = "Export isn't available here."; }
+};
+
+// ───────────────────────── Controls ─────────────────────────
+function seg(id, value, onPick) { const el = $(id);
+  const set = v => el.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === v)));
+  set(value); el.onclick = e => { const b = e.target.closest("button"); if (!b) return; set(b.dataset.v); onPick(b.dataset.v); }; return set; }
+const setBrush = seg("brushMode", P.gain < 0 ? "cut" : "boost", v => { const a = Math.abs(P.gain); P.gain = v === "cut" ? -a : Math.min(24, a); syncSliders(); savePrefs(); drawOverlay(); });
+const setHear = seg("hearSeg", "filtered", v => { S.hear = v; if (S.playing) restartPlayback(); });
+seg("showSeg", "filtered", v => { S.show = v; specDirty = true; refreshAll(); });
+function syncSliders() { $("amount").value = Math.abs(P.gain); $("amountVal").textContent = Math.abs(P.gain) + " dB" + (P.gain > 0 && Math.abs(P.gain) >= 24 ? " (max)" : "");
+  $("size").value = P.size; $("sizeVal").textContent = P.size + " px"; $("hard").value = Math.round(P.hard * 100); $("hardVal").textContent = Math.round(P.hard * 100) + "%"; }
+$("amount").oninput = e => { const a = +e.target.value; P.gain = P.gain < 0 ? -a : Math.min(24, a); syncSliders(); savePrefs(); };
+$("size").oninput = e => { P.size = +e.target.value; syncSliders(); savePrefs(); drawOverlay(); };
+$("hard").oninput = e => { P.hard = +e.target.value / 100; syncSliders(); savePrefs(); };
+$("playBtn").onclick = togglePlay; $("undoBtn").onclick = undo; $("redoBtn").onclick = redo; $("clearBtn").onclick = clearAll;
+$("fitBtn").onclick = () => setView(0, S.g.count / S.sr);
+document.addEventListener("keydown", e => {
+  if (e.target.closest("textarea, input, select, dialog")) return;
+  const mod = e.metaKey || e.ctrlKey;
+  if (e.code === "Space") { e.preventDefault(); togglePlay(); }
+  else if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+  else if (mod && e.key === ",") { e.preventDefault(); openSettings(); }
+  else if (!mod && e.key.toLowerCase() === "b") { S.hear = S.hear === "filtered" ? "original" : "filtered"; setHear(S.hear); if (S.playing) restartPlayback(); }
+});
+
+// Settings
+const fields = { sFft: "fft", sWin: "win", sMfcc: "mfcc", sPmin: "pmin", sPmax: "pmax", sThr: "thr", sScale: "scale", sCmap: "cmap", sFloor: "floor", sMask: "mask", sLoop: "loop" };
+function openSettings() { for (const [id, k] of Object.entries(fields)) { const el = $(id); el.type === "checkbox" ? (el.checked = P[k]) : (el.value = P[k]); } $("settingsDlg").showModal(); }
+$("settingsBtn").onclick = openSettings; $("settingsDone").onclick = () => $("settingsDlg").close();
+for (const [id, k] of Object.entries(fields)) $(id).addEventListener("change", e => {
+  const el = e.target, old = P[k]; P[k] = el.type === "checkbox" ? el.checked : (typeof DEFAULTS[k] === "number" ? +el.value : el.value); savePrefs();
+  if (old === P[k] || !S.orig) return;
+  if (["fft", "win", "mfcc", "pmin", "pmax", "thr"].includes(k)) reanalyse(); else { specDirty = true; refreshAll(); }
+});
+
+// Feedback
+let fbKind = "Idea"; seg("fbKind", "Idea", v => { fbKind = v; syncIssue(); });
+function syncIssue() { const u = new URL("https://github.com/amalmehta/SpectrogramStudio/issues/new");
+  u.searchParams.set("title", `[${fbKind}] (web) `); u.searchParams.set("body", $("fbText").value); $("fbIssue").href = u.toString(); }
+$("fbText").addEventListener("input", syncIssue);
+$("feedbackTab").onclick = () => { syncIssue(); $("feedbackDlg").showModal(); };
+$("fbClose").onclick = () => $("feedbackDlg").close();
+$("fbCopy").onclick = async () => { const t = `[${fbKind}] ${$("fbText").value}`;
+  try { await navigator.clipboard.writeText(t); $("fbCopy").textContent = "Copied"; } catch (_) { $("fbText").select(); } };
+
+new ResizeObserver(() => { specDirty = true; refreshAll(); }).observe($("timeline"));
+window.addEventListener("resize", () => { specDirty = true; refreshAll(); });
+
+// ───────────────────────── Demo: synthesised melody with three example filters ─────────────────────────
+function demoMelody(sr) {
+  const n = Math.round(sr * 12), x = new Float32Array(n);
+  const notes = [[0.3, 0.9, 57], [1.3, 0.9, 60], [2.3, 0.9, 64], [3.3, 1.6, 62], [5.2, 0.9, 60], [6.2, 0.9, 57], [7.2, 1.8, 55], [9.3, 2.2, 57]];
+  let ph = 0, seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647 * 2 - 1;
+  for (let i = 0; i < n; i++) { const t = i / sr; let s = 0;
+    const nt = notes.find(q => t >= q[0] && t < q[0] + q[1]);
+    if (nt) { const l = t - nt[0], f0 = 440 * Math.pow(2, (nt[2] - 69) / 12) * (1 + 0.012 * Math.sin(2 * Math.PI * 5.5 * l)); ph += 2 * Math.PI * f0 / sr;
+      const env = Math.min(1, l / 0.05) * Math.min(1, (nt[0] + nt[1] - t) / 0.12); for (let h = 1; h <= 10; h++) s += env * 0.22 / h * Math.sin(h * ph); }
+    s += 0.03 * Math.sin(2 * Math.PI * 60 * t) + 0.015 * Math.sin(2 * Math.PI * 180 * t);
+    const c = t - 4.9; if (c >= 0 && c < 2.5) s += 0.06 * Math.sin(2 * Math.PI * 2000 * 2.5 * (Math.pow(4, c / 2.5) - 1) / Math.log(4)) * Math.min(1, c / 0.1) * Math.min(1, (2.5 - c) / 0.1);
+    const b = t % 0.5; if (b < 0.03) s += rnd() * 0.08 * (1 - b / 0.03);
+    x[i] = s; }
+  return x;
+}
+(async function boot() {
+  syncSliders(); requestAnimationFrame(frame);
+  const sr = 44100; await install("Demo Melody (synthesised example)", demoMelody(sr), sr);
+  const d = S.dur, line = (t0, t1, h0, h1) => Array.from({ length: 61 }, (_, i) => ({ t: t0 + (t1 - t0) * i / 60, hz: h0 * Math.pow(h1 / h0, i / 60) }));
+  S.strokes = [{ gain: -40, rt: d * 0.02, ra: 0.35, hard: 0.4, scale: "log", stamps: line(d * 0.1, d * 0.45, 3000, 3000) },
+               { gain: -30, rt: d * 0.03, ra: 0.5, hard: 0.3, scale: "log", stamps: line(d * 0.55, d * 0.85, 300, 2400) },
+               { gain: 12, rt: d * 0.025, ra: 0.3, hard: 0.5, scale: "log", stamps: line(d * 0.6, d * 0.9, 6000, 6000) }];
+  for (const s of S.strokes) rasterAdd(S.R, s);
+  await renderFrames(0, S.g.frames);
+})();
+</script>

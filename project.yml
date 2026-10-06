@@ -1,0 +1,54 @@
+name: Spectrogram Studio
+options:
+  bundleIdPrefix: com.amalmehta
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_OPTIMIZATION_LEVEL: "-O"   # DSP loops are unusably slow at -Onone
+targets:
+  Spectrogram Studio:
+    type: application
+    platform: macOS
+    sources:
+      - path: "Spectrogram Studio"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.amalmehta.SpectrogramStudio
+        PRODUCT_NAME: Spectrogram Studio
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Spectrogram Studio
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.music
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+        ENABLE_HARDENED_RUNTIME: NO
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  Spectrogram Studio Tests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: Spectrogram Studio
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.amalmehta.SpectrogramStudioTests
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Spectrogram Studio.app/Contents/MacOS/Spectrogram Studio"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+schemes:
+  Spectrogram Studio:
+    build:
+      targets:
+        Spectrogram Studio: all
+        Spectrogram Studio Tests: [test]
+    test:
+      targets:
+        - Spectrogram Studio Tests

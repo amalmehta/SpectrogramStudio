@@ -1,0 +1,546 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		01BC0769555384E5A807C14D /* TimelineRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8820E23529A549B0CDD06607 /* TimelineRows.swift */; };
+		127F8BB2BC6159085116EF6B /* FFT.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F2C5AA1BDB4D9C6FFE5240C /* FFT.swift */; };
+		1E5753A2BF2AC7C66E1F7EF5 /* Studio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E1F9C16A0FB59F7019E826 /* Studio.swift */; };
+		22A003F55D96BB9A026FC5D0 /* FeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8EA30149CF7F33DDD7190DC /* FeedbackView.swift */; };
+		3195F827F230AE2A4CEA977D /* FilterMask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A524C520E2BB1A2DFA28AA /* FilterMask.swift */; };
+		35AE173E802392BFA3DD0E63 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1ED2A900C50906F71045B95 /* ContentView.swift */; };
+		3B745EAF35399CAD83B0CDCB /* Prefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACB0F646C6E84CE4244E037B /* Prefs.swift */; };
+		5D01239D0662B5861AFC2A92 /* InteractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCEC5E0BA3BCD9542380D535 /* InteractionTests.swift */; };
+		6704C33EA56A2CA660672ADF /* SpectrogramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D93B7F786A05227226D0F10C /* SpectrogramView.swift */; };
+		7B3A19E0B972CBF0AFEA0A7E /* STFT.swift in Sources */ = {isa = PBXBuildFile; fileRef = 723D2EC3A426B637A9932276 /* STFT.swift */; };
+		83C363D6F024590FA0D6109C /* Analysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 148D52FAD00CAB43487998A0 /* Analysis.swift */; };
+		8914D293F38D82821E3CA7DC /* Rendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86AE88106C1385D6DCD973B7 /* Rendering.swift */; };
+		9FD61BF4A85DD7374397B7C6 /* FrequencyScale.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64EC3767D03BDC6EE1E05EBF /* FrequencyScale.swift */; };
+		A5C05A9891229E039CDCC58F /* SpectrogramStudioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D7456D0F4C1C833F74D3C54 /* SpectrogramStudioApp.swift */; };
+		AE8544BD03AD94A4B7E54C5D /* DSPTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF627837FF21A9762BA3F3CB /* DSPTests.swift */; };
+		BCA21B39DAFCFBCC0B0D3FCC /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADDE71DF80CDA2EF42ECA661 /* AudioPlayer.swift */; };
+		C44E686167904C3EA540E8FF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA28F8A8ED4D7A33A146C5D1 /* SettingsView.swift */; };
+		CCAFC25AA08FB73990FC6E64 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A7D96F9C4369DC4C773F989A /* Assets.xcassets */; };
+		EFCE93796A16C58EEDBF1838 /* PitchTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED2796E92809DD4014288AA1 /* PitchTracker.swift */; };
+		F6BBF34A85DA49410F237240 /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 206F95B6E82AFF9A5C4FBB73 /* InspectorView.swift */; };
+		FA89F76014BF683477A1A79D /* MFCC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C470FA04D34F478CE14EB601 /* MFCC.swift */; };
+		FB080BF517D46DBD7A02E1D1 /* AudioFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A344F0FB7E9CCA2530515BD /* AudioFile.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		32D01C3002F43E885DE1FA64 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E2A373965934470E224D4DA2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 836FBB245E52EE86F2FCA981;
+			remoteInfo = "Spectrogram Studio";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		148D52FAD00CAB43487998A0 /* Analysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analysis.swift; sourceTree = "<group>"; };
+		16A524C520E2BB1A2DFA28AA /* FilterMask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterMask.swift; sourceTree = "<group>"; };
+		16E1F9C16A0FB59F7019E826 /* Studio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Studio.swift; sourceTree = "<group>"; };
+		206F95B6E82AFF9A5C4FBB73 /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
+		5A344F0FB7E9CCA2530515BD /* AudioFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioFile.swift; sourceTree = "<group>"; };
+		64EC3767D03BDC6EE1E05EBF /* FrequencyScale.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrequencyScale.swift; sourceTree = "<group>"; };
+		723D2EC3A426B637A9932276 /* STFT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STFT.swift; sourceTree = "<group>"; };
+		781039D0B6AFED5A3D614D1B /* Spectrogram Studio Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Spectrogram Studio Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		7F2C5AA1BDB4D9C6FFE5240C /* FFT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FFT.swift; sourceTree = "<group>"; };
+		86AE88106C1385D6DCD973B7 /* Rendering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rendering.swift; sourceTree = "<group>"; };
+		8820E23529A549B0CDD06607 /* TimelineRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineRows.swift; sourceTree = "<group>"; };
+		8D7456D0F4C1C833F74D3C54 /* SpectrogramStudioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrogramStudioApp.swift; sourceTree = "<group>"; };
+		A7D96F9C4369DC4C773F989A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A8EA30149CF7F33DDD7190DC /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
+		ACB0F646C6E84CE4244E037B /* Prefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prefs.swift; sourceTree = "<group>"; };
+		ADDE71DF80CDA2EF42ECA661 /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
+		BCEC5E0BA3BCD9542380D535 /* InteractionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionTests.swift; sourceTree = "<group>"; };
+		BF627837FF21A9762BA3F3CB /* DSPTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DSPTests.swift; sourceTree = "<group>"; };
+		C470FA04D34F478CE14EB601 /* MFCC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MFCC.swift; sourceTree = "<group>"; };
+		CA28F8A8ED4D7A33A146C5D1 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		D93B1D8362D402C2CB344B47 /* Spectrogram Studio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Spectrogram Studio.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D93B7F786A05227226D0F10C /* SpectrogramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrogramView.swift; sourceTree = "<group>"; };
+		ED2796E92809DD4014288AA1 /* PitchTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PitchTracker.swift; sourceTree = "<group>"; };
+		F1ED2A900C50906F71045B95 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0305EE463480C06A4DA03BD1 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				BF627837FF21A9762BA3F3CB /* DSPTests.swift */,
+				BCEC5E0BA3BCD9542380D535 /* InteractionTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		0F73C250DC37C0F392652C0D /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				16A524C520E2BB1A2DFA28AA /* FilterMask.swift */,
+				16E1F9C16A0FB59F7019E826 /* Studio.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		110085649B56C916E4B5A57B /* App */ = {
+			isa = PBXGroup;
+			children = (
+				ACB0F646C6E84CE4244E037B /* Prefs.swift */,
+				8D7456D0F4C1C833F74D3C54 /* SpectrogramStudioApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		13765FB253B080679F698F62 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				781039D0B6AFED5A3D614D1B /* Spectrogram Studio Tests.xctest */,
+				D93B1D8362D402C2CB344B47 /* Spectrogram Studio.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1E0790A2D4A494CF56162535 = {
+			isa = PBXGroup;
+			children = (
+				878DD2E0163B133F416A0D32 /* Spectrogram Studio */,
+				0305EE463480C06A4DA03BD1 /* Tests */,
+				13765FB253B080679F698F62 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		2C94B5DF44C202E77082F359 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A7D96F9C4369DC4C773F989A /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		2D1814B613571BBFB3A55AEF /* DSP */ = {
+			isa = PBXGroup;
+			children = (
+				148D52FAD00CAB43487998A0 /* Analysis.swift */,
+				7F2C5AA1BDB4D9C6FFE5240C /* FFT.swift */,
+				64EC3767D03BDC6EE1E05EBF /* FrequencyScale.swift */,
+				C470FA04D34F478CE14EB601 /* MFCC.swift */,
+				ED2796E92809DD4014288AA1 /* PitchTracker.swift */,
+				723D2EC3A426B637A9932276 /* STFT.swift */,
+			);
+			path = DSP;
+			sourceTree = "<group>";
+		};
+		304B10207CB0A44D0B9659DF /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				5A344F0FB7E9CCA2530515BD /* AudioFile.swift */,
+				ADDE71DF80CDA2EF42ECA661 /* AudioPlayer.swift */,
+			);
+			path = Audio;
+			sourceTree = "<group>";
+		};
+		5D9EC4E8CC98FF4EFA321568 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				F1ED2A900C50906F71045B95 /* ContentView.swift */,
+				A8EA30149CF7F33DDD7190DC /* FeedbackView.swift */,
+				206F95B6E82AFF9A5C4FBB73 /* InspectorView.swift */,
+				86AE88106C1385D6DCD973B7 /* Rendering.swift */,
+				CA28F8A8ED4D7A33A146C5D1 /* SettingsView.swift */,
+				D93B7F786A05227226D0F10C /* SpectrogramView.swift */,
+				8820E23529A549B0CDD06607 /* TimelineRows.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		878DD2E0163B133F416A0D32 /* Spectrogram Studio */ = {
+			isa = PBXGroup;
+			children = (
+				110085649B56C916E4B5A57B /* App */,
+				304B10207CB0A44D0B9659DF /* Audio */,
+				2D1814B613571BBFB3A55AEF /* DSP */,
+				0F73C250DC37C0F392652C0D /* Model */,
+				2C94B5DF44C202E77082F359 /* Resources */,
+				5D9EC4E8CC98FF4EFA321568 /* Views */,
+			);
+			path = "Spectrogram Studio";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		836FBB245E52EE86F2FCA981 /* Spectrogram Studio */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 695C778954CCBE549AF54403 /* Build configuration list for PBXNativeTarget "Spectrogram Studio" */;
+			buildPhases = (
+				4A836CB967C4D9D38D2DE83F /* Sources */,
+				7A28869E95741FF0AE3062F2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Spectrogram Studio";
+			packageProductDependencies = (
+			);
+			productName = "Spectrogram Studio";
+			productReference = D93B1D8362D402C2CB344B47 /* Spectrogram Studio.app */;
+			productType = "com.apple.product-type.application";
+		};
+		83C07F8AB3822A0879D67F75 /* Spectrogram Studio Tests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C6AF816CD493714561052FAC /* Build configuration list for PBXNativeTarget "Spectrogram Studio Tests" */;
+			buildPhases = (
+				BA414AE4525214E9084CF3FF /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				39018FF94C991833D2D172A7 /* PBXTargetDependency */,
+			);
+			name = "Spectrogram Studio Tests";
+			packageProductDependencies = (
+			);
+			productName = "Spectrogram Studio Tests";
+			productReference = 781039D0B6AFED5A3D614D1B /* Spectrogram Studio Tests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E2A373965934470E224D4DA2 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					836FBB245E52EE86F2FCA981 = {
+						ProvisioningStyle = Manual;
+					};
+					83C07F8AB3822A0879D67F75 = {
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 1F28D80FCE8A1D7E2A02D801 /* Build configuration list for PBXProject "Spectrogram Studio" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 1E0790A2D4A494CF56162535;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 13765FB253B080679F698F62 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				836FBB245E52EE86F2FCA981 /* Spectrogram Studio */,
+				83C07F8AB3822A0879D67F75 /* Spectrogram Studio Tests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		7A28869E95741FF0AE3062F2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CCAFC25AA08FB73990FC6E64 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4A836CB967C4D9D38D2DE83F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				83C363D6F024590FA0D6109C /* Analysis.swift in Sources */,
+				FB080BF517D46DBD7A02E1D1 /* AudioFile.swift in Sources */,
+				BCA21B39DAFCFBCC0B0D3FCC /* AudioPlayer.swift in Sources */,
+				35AE173E802392BFA3DD0E63 /* ContentView.swift in Sources */,
+				127F8BB2BC6159085116EF6B /* FFT.swift in Sources */,
+				22A003F55D96BB9A026FC5D0 /* FeedbackView.swift in Sources */,
+				3195F827F230AE2A4CEA977D /* FilterMask.swift in Sources */,
+				9FD61BF4A85DD7374397B7C6 /* FrequencyScale.swift in Sources */,
+				F6BBF34A85DA49410F237240 /* InspectorView.swift in Sources */,
+				FA89F76014BF683477A1A79D /* MFCC.swift in Sources */,
+				EFCE93796A16C58EEDBF1838 /* PitchTracker.swift in Sources */,
+				3B745EAF35399CAD83B0CDCB /* Prefs.swift in Sources */,
+				8914D293F38D82821E3CA7DC /* Rendering.swift in Sources */,
+				7B3A19E0B972CBF0AFEA0A7E /* STFT.swift in Sources */,
+				C44E686167904C3EA540E8FF /* SettingsView.swift in Sources */,
+				A5C05A9891229E039CDCC58F /* SpectrogramStudioApp.swift in Sources */,
+				6704C33EA56A2CA660672ADF /* SpectrogramView.swift in Sources */,
+				1E5753A2BF2AC7C66E1F7EF5 /* Studio.swift in Sources */,
+				01BC0769555384E5A807C14D /* TimelineRows.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BA414AE4525214E9084CF3FF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AE8544BD03AD94A4B7E54C5D /* DSPTests.swift in Sources */,
+				5D01239D0662B5861AFC2A92 /* InteractionTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		39018FF94C991833D2D172A7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 836FBB245E52EE86F2FCA981 /* Spectrogram Studio */;
+			targetProxy = 32D01C3002F43E885DE1FA64 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		17E69DE3672635D5744E0316 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Release;
+		};
+		2EBEDE51B4747B86F2DCF85E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Spectrogram Studio";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.amalmehta.SpectrogramStudio;
+				PRODUCT_NAME = "Spectrogram Studio";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		8BD5E46CBD025FE924DB9CD5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.amalmehta.SpectrogramStudioTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Spectrogram Studio.app/Contents/MacOS/Spectrogram Studio";
+			};
+			name = Debug;
+		};
+		A0E04C8EAB5D9FB26DF63A28 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Spectrogram Studio";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.amalmehta.SpectrogramStudio;
+				PRODUCT_NAME = "Spectrogram Studio";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		B47CC68E742FCAC46776490B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.amalmehta.SpectrogramStudioTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Spectrogram Studio.app/Contents/MacOS/Spectrogram Studio";
+			};
+			name = Release;
+		};
+		EFE0D284E09701E1F5EA98A9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1F28D80FCE8A1D7E2A02D801 /* Build configuration list for PBXProject "Spectrogram Studio" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EFE0D284E09701E1F5EA98A9 /* Debug */,
+				17E69DE3672635D5744E0316 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		695C778954CCBE549AF54403 /* Build configuration list for PBXNativeTarget "Spectrogram Studio" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2EBEDE51B4747B86F2DCF85E /* Debug */,
+				A0E04C8EAB5D9FB26DF63A28 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C6AF816CD493714561052FAC /* Build configuration list for PBXNativeTarget "Spectrogram Studio Tests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8BD5E46CBD025FE924DB9CD5 /* Debug */,
+				B47CC68E742FCAC46776490B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E2A373965934470E224D4DA2 /* Project object */;
+}
