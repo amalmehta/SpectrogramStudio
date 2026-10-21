@@ -68,9 +68,9 @@ The inspector on the right follows the playhead, or the pointer while you hover:
 
 ## The website
 
-The web version is one HTML page, [`web/index.html`](../web/index.html), published at [claude.ai/artifact/UjHPrJf4yd6SzCk3zDSRc8](https://claude.ai/artifact/UjHPrJf4yd6SzCk3zDSRc8). It opens on the demo melody with three example filters, decodes whatever your browser can (WAV, MP3, AAC/M4A, usually MP4), and has the same painting, undo, Hear/Show switches and a Settings dialog. Export saves a `.zip` containing the WAV, because artifact downloads don't allow `.wav` directly.
+The web version is one HTML page, [`web/index.html`](../web/index.html), published at [amalmehta.github.io/SpectrogramStudio](https://amalmehta.github.io/SpectrogramStudio/). It opens on the demo melody with three example filters, decodes whatever your browser can (WAV, MP3, AAC/M4A, usually MP4), and has the same painting, undo, Hear/Show switches and a Settings dialog. Export saves a `.zip` containing the WAV, because artifact downloads don't allow `.wav` directly.
 
-To republish after editing it, publish `web/index.html` again to the same artifact URL.
+It's republished to GitHub Pages on every push to `main`.
 
 ## Regenerating screenshots and the icon
 

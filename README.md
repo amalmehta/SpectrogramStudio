@@ -2,7 +2,7 @@
 
 A Mac app (and a website) where you drop in any audio or video file, see its STFT spectrogram, MFCCs and pitch track, and paint filters straight onto the spectrogram to hear the result immediately.
 
-**Website:** [claude.ai/artifact/UjHPrJf4yd6SzCk3zDSRc8](https://claude.ai/artifact/UjHPrJf4yd6SzCk3zDSRc8) (private until you share it)
+**Website:** [amalmehta.github.io/SpectrogramStudio](https://amalmehta.github.io/SpectrogramStudio/)
 
 ![Spectrogram Studio with painted filters: a blue cut across the 3 kHz harmonics, a rising cut and an amber boost](docs/images/main.jpg)
 
@@ -21,4 +21,4 @@ flowchart LR
     R --> A
 ```
 
-**Links:** [Website](https://claude.ai/artifact/UjHPrJf4yd6SzCk3zDSRc8) · [Setup and use](docs/INSTRUCTIONS.md) · [System design](docs/SYSTEM-DESIGN.md) · [File structure](docs/FILE-STRUCTURE.md) · [Original brief](Spectrogram%20Studio.md)
+**Links:** [Website](https://amalmehta.github.io/SpectrogramStudio/) · [Setup and use](docs/INSTRUCTIONS.md) · [System design](docs/SYSTEM-DESIGN.md) · [File structure](docs/FILE-STRUCTURE.md) · [Original brief](Spectrogram%20Studio.md)
