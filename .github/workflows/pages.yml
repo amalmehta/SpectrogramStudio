@@ -22,13 +22,20 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      # web/index.html is written for the Artifact host, which adds the document skeleton; add it here.
+      # web/index.html is written for the Artifact host, which adds the document skeleton; add the same one here.
       - name: Wrap the page in a full HTML document
         run: |
           mkdir -p _site
           cp -R web/. _site/
           rm -rf _site/tests _site/package.json
-          { printf '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n'; cat web/index.html; } > _site/index.html
+          {
+            echo '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+            echo '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
+            echo '<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>'
+            echo '</head><body>'
+            cat web/index.html
+            echo '</body></html>'
+          } > _site/index.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
